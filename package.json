@@ -1,0 +1,49 @@
+{
+  "name": "solana-token-tracker",
+  "version": "1.0.0",
+  "description": "Solana 代币交易记录追踪工具",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node --max-old-space-size=4096 server.js",
+    "start:large": "node --max-old-space-size=8192 server.js",
+    "start:gc": "node --max-old-space-size=4096 --expose-gc server.js",
+    "dev": "node --watch --max-old-space-size=4096 server.js",
+    "dev:gc": "node --watch --max-old-space-size=4096 --expose-gc server.js",
+    "analyze": "node --max-old-space-size=4096 src/controllers/holderPnlController.js",
+    "analyze:debug": "node --max-old-space-size=4096 --expose-gc src/controllers/holderPnlController.js",
+    "analyze:large": "node --max-old-space-size=8192 --expose-gc src/controllers/holderPnlController.js",
+    "memory:test": "node --expose-gc -e \"const v8 = require('v8'); console.log('Heap Limit:', (v8.getHeapStatistics().heap_size_limit / 1024 / 1024).toFixed(2), 'MB');\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "solana",
+    "blockchain",
+    "token",
+    "tracker"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@bull-board/api": "^6.14.2",
+    "@bull-board/express": "^6.14.2",
+    "@solana/kit": "^5.1.0",
+    "@solana/web3.js": "^1.98.4",
+    "axios": "^1.13.2",
+    "bs58": "^6.0.0",
+    "bullmq": "^5.65.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.18.2",
+    "helius-sdk": "^2.0.3",
+    "https-proxy-agent": "^7.0.6",
+    "ioredis": "^5.8.2",
+    "mysql2": "^3.15.3",
+    "node-cron": "^4.2.1",
+    "node-fetch": "^3.3.2",
+    "socks-proxy-agent": "^8.0.5",
+    "v8": "^0.1.0",
+    "websocket": "^1.0.35",
+    "ws": "^8.18.3"
+  }
+}
