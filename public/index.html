@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solana 代币交易追踪器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .search-section {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 15px 20px;
+            font-size: 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            border-color: #667eea;
+        }
+
+        .search-box button {
+            padding: 15px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .search-box button:hover {
+            background: #5568d3;
+        }
+
+        .stats-section {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            background: #f8f9fa;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            color: #6c757d;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .transactions-section {
+            padding: 30px;
+        }
+
+        .transactions-section h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .transaction-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .transaction-table thead {
+            background: #667eea;
+            color: white;
+        }
+
+        .transaction-table th,
+        .transaction-table td {
+            padding: 15px;
+            text-align: left;
+        }
+
+        .transaction-table tbody tr {
+            border-bottom: 1px solid #e9ecef;
+            transition: background 0.2s;
+        }
+
+        .transaction-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .type-buy {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .type-sell {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .address-link {
+            color: #667eea;
+            text-decoration: none;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .address-link:hover {
+            text-decoration: underline;
+        }
+
+        .timestamp {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .tab-button {
+            padding: 10px 20px;
+            margin: 0 5px;
+            background: #e9ecef;
+            color: #6c757d;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .tab-button:hover {
+            background: #dee2e6;
+        }
+
+        .tab-button.active {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Solana 代币交易追踪器</h1>
+            <p>查看任何 Solana 代币的交易记录和价格信息</p>
+        </div>
+
+        <div class="search-section">
+            <div style="margin-bottom: 15px; text-align: center;">
+                <button 
+                    class="tab-button" 
+                    onclick="switchTab('address')"
+                    id="tab-address"
+                >钱包地址 ✅</button>
+                <button 
+                    class="tab-button" 
+                    onclick="switchTab('pool')"
+                    id="tab-pool"
+                >交易对地址 ✅</button>
+                <button 
+                    class="tab-button" 
+                    onclick="switchTab('token')"
+                    id="tab-token"
+                >代币地址 ⚠️</button>
+            </div>
+            <div class="search-box">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="输入钱包地址 (例如: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU)"
+                    value=""
+                >
+                <button onclick="searchToken()">搜索</button>
+            </div>
+            <div id="searchHint" style="margin-top: 10px; text-align: center; color: #6c757d; font-size: 0.9em;">
+                ✅ 钱包地址查询无需 API Key，可直接使用
+            </div>
+        </div>
+
+        <div id="stats" class="stats-section" style="display: none;">
+            <div class="stat-card">
+                <h3>总交易数</h3>
+                <div class="value" id="totalTxs">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>买入</h3>
+                <div class="value type-buy" id="buyTxs">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>卖出</h3>
+                <div class="value type-sell" id="sellTxs">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>总交易量 (SOL)</h3>
+                <div class="value" id="totalVolume">0</div>
+            </div>
+        </div>
+
+        <div class="transactions-section">
+            <div id="loading" class="loading" style="display: none;">
+                正在加载交易记录...
+            </div>
+            <div id="error" style="display: none;"></div>
+            <div id="transactions"></div>
+        </div>
+    </div>
+
+    <script>
+        // 默认使用钱包地址查询（无需 API Key）
+        let currentTab = 'address';
+
+        // 页面加载时设置默认标签
+        window.onload = function() {
+            switchTab('address');
+        };
+
+        function switchTab(tab) {
+            currentTab = tab;
+            // 更新按钮状态
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            
+            // 更新输入框提示
+            const input = document.getElementById('searchInput');
+            const hint = document.getElementById('searchHint');
+            
+            if (tab === 'token') {
+                input.placeholder = '输入代币地址 (例如: Eg2ymQ2aQqjMcibnmTt8erC6Tvk9PVpJZCxvVPJz2agu)';
+                hint.innerHTML = '⚠️ 代币地址查询需要 Helius API Key。建议使用"钱包地址"或"交易对地址"查询（无需 API Key）';
+            } else if (tab === 'address') {
+                input.placeholder = '输入钱包地址 (例如: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU)';
+                hint.innerHTML = '✅ 钱包地址查询无需 API Key，可直接使用。查看该地址的所有交易记录';
+            } else if (tab === 'pool') {
+                input.placeholder = '输入交易对地址 (Pool Address)';
+                hint.innerHTML = '✅ 交易对地址查询无需 API Key，可直接使用。在 Solscan 上找到代币的交易对地址';
+            }
+        }
+
+        async function searchToken() {
+            const address = document.getElementById('searchInput').value.trim();
+            if (!address) {
+                alert('请输入地址');
+                return;
+            }
+
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const transactions = document.getElementById('transactions');
+            const stats = document.getElementById('stats');
+
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            transactions.innerHTML = '';
+            stats.style.display = 'none';
+
+            try {
+                let response;
+                let data;
+                
+                if (currentTab === 'token') {
+                    // 代币地址查询
+                    response = await fetch(`/api/token/${address}?limit=100`);
+                    data = await response.json();
+                } else if (currentTab === 'address') {
+                    // 钱包地址查询（无需 API Key）
+                    response = await fetch(`/api/address/${address}?limit=100`);
+                    data = await response.json();
+                    
+                    if (data.success) {
+                        // 转换格式以适配显示
+                        data.transactions = data.transactions.map(tx => ({
+                            signature: tx.signature,
+                            blockTime: tx.blockTime,
+                            slot: tx.slot,
+                            type: 'unknown',
+                            price: null,
+                            amount: null,
+                            solAmount: null,
+                            addresses: [address],
+                            transaction: tx.transaction
+                        }));
+                        data.stats = {
+                            total: data.transactionCount,
+                            buys: 0,
+                            sells: 0,
+                            totalVolume: 0
+                        };
+                    }
+                } else if (currentTab === 'pool') {
+                    // 交易对地址查询（无需 API Key）
+                    response = await fetch(`/api/pool/${address}?limit=100`);
+                    data = await response.json();
+                    
+                    if (data.success) {
+                        // 转换格式以适配显示
+                        data.transactions = data.transactions.map(tx => ({
+                            signature: tx.signature,
+                            blockTime: tx.blockTime,
+                            slot: tx.slot,
+                            type: 'unknown',
+                            price: null,
+                            amount: null,
+                            solAmount: null,
+                            addresses: [address],
+                            transaction: tx.transaction
+                        }));
+                        data.stats = {
+                            total: data.transactionCount,
+                            buys: 0,
+                            sells: 0,
+                            totalVolume: 0
+                        };
+                    }
+                }
+
+                if (!data.success) {
+                    // 显示详细的错误信息和解决方案
+                    error.style.display = 'block';
+                    error.className = 'error';
+                    
+                    let errorHtml = `<strong>⚠️ ${data.message || data.error || '获取交易记录失败'}</strong><br><br>`;
+                    
+                    if (currentTab === 'token') {
+                        errorHtml += `
+                            <strong>💡 建议：</strong><br>
+                            1. 切换到 <strong>"钱包地址"</strong> 标签，输入持有该代币的钱包地址（无需 API Key）<br>
+                            2. 切换到 <strong>"交易对地址"</strong> 标签，输入代币的交易对地址（无需 API Key）<br>
+                            3. 或者配置 Helius API Key 以使用代币地址查询功能<br><br>
+                        `;
+                    }
+                    
+                    if (data.solutions && data.solutions.length > 0) {
+                        errorHtml += '<strong>详细解决方案:</strong><br>';
+                        data.solutions.forEach((solution, index) => {
+                            errorHtml += `<br><strong>${index + 1}. ${solution.method}</strong><br>`;
+                            solution.steps.forEach(step => {
+                                errorHtml += `&nbsp;&nbsp;${step}<br>`;
+                            });
+                        });
+                    }
+                    
+                    if (data.hint) {
+                        errorHtml += `<br><strong>提示:</strong> <a href="${data.hint}" target="_blank">在 Solscan 查看交易记录</a>`;
+                    }
+                    
+                    error.innerHTML = errorHtml;
+                    return;
+                }
+
+                displayStats(data.stats);
+                displayTransactions(data.transactions);
+
+            } catch (err) {
+                error.style.display = 'block';
+                error.className = 'error';
+                error.innerHTML = `
+                    <strong>错误:</strong> ${err.message}<br>
+                    <small>提示: 此功能需要配置 Helius API Key 或使用其他索引服务</small>
+                `;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function displayStats(stats) {
+            document.getElementById('stats').style.display = 'grid';
+            document.getElementById('totalTxs').textContent = stats.total || 0;
+            document.getElementById('buyTxs').textContent = stats.buys || 0;
+            document.getElementById('sellTxs').textContent = stats.sells || 0;
+            document.getElementById('totalVolume').textContent = (stats.totalVolume || 0).toFixed(4);
+        }
+
+        function displayTransactions(txs) {
+            if (!txs || txs.length === 0) {
+                document.getElementById('transactions').innerHTML = '<p>没有找到交易记录</p>';
+                return;
+            }
+
+            let html = `
+                <h2>交易记录 (${txs.length} 笔)</h2>
+                <table class="transaction-table">
+                    <thead>
+                        <tr>
+                            <th>类型</th>
+                            <th>时间</th>
+                            <th>价格 (SOL)</th>
+                            <th>数量</th>
+                            <th>金额 (SOL)</th>
+                            <th>地址</th>
+                            <th>交易签名</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            txs.forEach(tx => {
+                const date = new Date(tx.blockTime * 1000);
+                const typeClass = tx.type === 'buy' ? 'type-buy' : 'type-sell';
+                const typeText = tx.type === 'buy' ? '买入' : '卖出';
+                const address = tx.addresses && tx.addresses.length > 0 ? tx.addresses[0] : 'N/A';
+                const shortAddress = address.length > 8 ? address.substring(0, 8) + '...' : address;
+                const shortSignature = tx.signature.substring(0, 16) + '...';
+
+                html += `
+                    <tr>
+                        <td><span class="${typeClass}">${typeText}</span></td>
+                        <td class="timestamp">${date.toLocaleString('zh-CN')}</td>
+                        <td>${tx.price ? tx.price.toFixed(8) : 'N/A'}</td>
+                        <td>${tx.amount ? tx.amount.toFixed(4) : 'N/A'}</td>
+                        <td>${tx.solAmount ? tx.solAmount.toFixed(4) : 'N/A'}</td>
+                        <td>
+                            <a href="https://solscan.io/account/${address}" target="_blank" class="address-link">
+                                ${shortAddress}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="https://solscan.io/tx/${tx.signature}" target="_blank" class="address-link">
+                                ${shortSignature}
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            document.getElementById('transactions').innerHTML = html;
+        }
+
+        // 支持回车键搜索
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchToken();
+            }
+        });
+    </script>
+</body>
+</html>
+
